@@ -1,0 +1,82 @@
+<template name="layout">
+<div class="container">
+<div class="top">
+	<a href="/"><img src="logo.png" class="logo"></a>
+	<div class="nav">
+	<span><a href="/tutorial">TUTORIAL</a></span>
+	<span><a href="/docs">DOCS</a></span>
+	<span><a href="/howArchyWorks">HOW IT WORKS</a></span>
+	</div>
+</div>
+</div>
+{{> yield}}
+</template>
+
+
+<template name="home">
+
+<div class="container">
+<div class="middle">
+	<div class="center">
+		<img class="slogan" src="slogan.png">
+	</div>
+	<div class="center">
+		<svg xmlns="http://www.w3.org/2000/svg" class="svg">
+		</svg>
+	</div>
+	<div class="center">
+		<div class="text">
+		<div class="h1 meteor"><img src="awesome.png"><h1>What is Meteor?</h1></div>
+		<p><a target="_blank" href="https://meteor.com">Meteor</a> is a radical open-source NodeJS framework for building web apps. <br>
+		What makes Meteor special among the pre-existing web frameworks is that not only is it elegantly designed, the way it's designed enables reactivity and zero client-side latency. </p>
+		</div>
+	</div>
+</div>
+</div>
+<div class="background2">
+<div class="container">
+<div class="middle">
+	<div class="center">
+		<div class="text">
+		<div class="h1 archy"><img src="cool.png"><h1>What is Archy?</h1></div>
+		<p>Archy is an open-source Meteor app that works as a System Management System for Meteor apps. With Archy, one can build a twitter-like social networking site in less than a day. If you have a start-up idea in mind and want to build a web app, Archy is here to help. </p> 
+		<a href="demo"><h4 class="button"><div class="AwesomeButtonBackground"></div><div>DEMO</div></h4></a>
+		<a href="download"><h4 class="button"><div class="AwesomeButtonBackground"></div><div>DOWNLOAD ARCHY 0.1.0</div></h4></a>
+		</div>
+	</div>
+</div>
+<div class="bottom">
+</div>
+</div>
+</div>
+</template>
+
+<template name="howitworks">
+		<div class="text">
+		<h1>How Archy works?</h1>
+		<p>Archy provides an easy-to-use GUI for creating and managing the database structure, business logic, user flows, and GUI of your Meteor app.</p>
+
+		<p>Everything you create in Archy's GUI would be converted into JSON objects.</p>
+
+		<p>Using these JSON objects, Archy would write a Meteor app with The Butler Libraries, a collection of various Meteor packages speically designed to work with Archy to provide functionalities such as ODM, hooks, routing, etc in your Meteor app.</p>
+
+		<p>Anytime you want to modify the infrastructure of your app, you can just make some changes in Archy, and Archy would edit the JSON objects and write a new Meteor app.</p>
+		</div>
+		<div class="text">
+		<h1>Who is Archy for?</h1>
+		<p>Archy is for anyone who wants to build stuff. You don't need to know how to code to start using Archy. Of course, it would be awesome if you know how to code, and it would be even more awesome if you are a Meteor developer, because that would mean you can start writing <a href="/plug-ins">plug-ins</a> and <a href="/themes">themes</a> for Archy.</p>
+		</div>
+		<div class="text">
+		<h1>Here is a simple demo.</h1> 
+		<p>This is the part of the GUI for creating & managing collection relation. Just play around with it & see what happens in the editor below.</p>
+		{{> GUI1}}
+		<br>
+		{{> editor}}
+		<p><a href="https://github.com/0a-/DB-Butler">DBButler</a> is one of the The Butler Libraries. It provides flexible ODM (Object-documenet mapping), hooks, a bunch of useful functional programming helpers, and better coding convention.</p>
+		</div>	
+</template>
+
+<template name="tutorial">
+<div class="center">Coming up soon. Alpha version would be available in Mid april.</div>
+</template>
+
