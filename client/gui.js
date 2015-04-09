@@ -32,21 +32,28 @@ var closure = function(){
         height: function(){
             return getDimension.call(this,"height");
         },
-        makeRect: function(bigger,arrayOfEles){
+        makeRect: function(bigger,arrayOfEles,transform){
             bigger = bigger || 0;
             if(arrayOfEles !== undefined){
                 //group them
                 var array = [];
+                arrayOfEles.push(this);
                 arrayOfEles.forEach(function(e){
-                    array.push(e._);
+                    if(e.group!== undefined){
+                        array.push(e.group);
+                    }else{
+                        array.push(e._);
+                    }
                 });
-                array.push(this._);
                 var group = new archySnapWrap(paper.g.apply(paper,array));
-                return group.makeRect(bigger);
+                return group.makeRect(bigger,undefined,transform);
             }
             this.rect = paper.rect(this.x() - bigger / 2, this.y() - bigger / 2, this.width() + bigger, this.height() + bigger);
+            this.group = paper.g(this.rect,this._);
+            var transformation = transform || "matrix(1,0,0,1,0,0)";
             this.rect.attr({
-                "fill-opacity":0
+                "fill-opacity":0,
+                "transform":transformation
             });
             return this;
         },
@@ -56,17 +63,15 @@ var closure = function(){
                     });
         },
         CLICK: function(fn){
-            if(this.rect === undefined) this.makeRect();
             this.pointerize().click(fn);
         },
         DRAG : function(fn0,fn1,fn2){
-            if(this.rect === undefined) this.makeRect();
             this.pointerize().drag(fn0,fn1,fn2);
         },
         pointerize : function() {
-            console.log(this.rect);
-            this.rect.node.style.cursor = "pointer";
-            return this.rect;
+            if(this.rect === undefined) this.makeRect();
+            this.group.node.style.cursor = "pointer";
+            return this.group;
         }
     }
 
@@ -178,7 +183,7 @@ var initGUI1 = function(editor) {
                 object.transform("matrix(1,0,0,1," + x + "," + y + ")");
             },
             finalizeCollectionObject: function(object,x,y,text){
-                //manyToOne oneToMany icons
+                //manyToX oneToX icons
                 x = x + object.width() + 15;
                 y = y + 14;
                 var oneToX =  $("circle").$(0, 0, 5);
@@ -191,58 +196,80 @@ var initGUI1 = function(editor) {
                         stroke: "black"
                     });
                 });
-                var manyToX = line3.makeRect(0,[line1, line2]);
-                manyToX.transform("matrix(0,0,0,0," + x + "," + (y + 18) + ")");
-                oneToX.transform("matrix(0,0,0,0," + x + "," + y + ")");
+                var manyToXMatrix = "matrix(1,0,0,1," + x + "," + (y + 18) + ")",
+                    manyToXMatrix0 = "matrix(0,0,0,0," + x + "," + (y + 18) + ")",
+                    oneToXMatrix = "matrix(1,0,0,1," + x + "," + y + ")",
+                    oneToXMatrix0 = "matrix(0,0,0,0," + x + "," + y + ")";
+                var manyToX = line3.makeRect(0,[line1, line2],manyToXMatrix);
+                oneToX = oneToX.makeRect(0,undefined,oneToXMatrix);
+                manyToX.transform(manyToXMatrix0);
+                oneToX.transform(oneToXMatrix0);
 
                 //hover
                 var group = object.makeRect(0,[text]);
                 var supergroup = group.makeRect(23,[manyToX,oneToX]);
-                /*so that it is not blocked by supersupergroup */ group.rect.appendTo($.paper());
-                supergroup.rect.hover(function(){
+                supergroup.group.hover(function(){
                     oneToX._.stop().animate({
-                            transform: "matrix(1,0,0,1," + x + "," + y + ")"
+                            transform: oneToXMatrix
                         },
                         500, mina.elastic);
                     manyToX._.stop().animate({
-                            transform: "matrix(1,0,0,1," + x + "," + (y + 18) + ")"
+                            transform: manyToXMatrix
                         },
                         500, mina.elastic);
                     }, function() {
                     oneToX._.stop().animate({
-                            transform: "matrix(0,0,0,0," + x + "," + y + ")"
+                            transform: oneToXMatrix0
                         },
                         300, mina.easeout);
                     manyToX._.stop().animate({
-                            transform: "matrix(0,0,0,0," + x + "," + (y + 18) + ")"
+                            transform: manyToXMatrix0
                         },
                         300, mina.easeout);
                 });
                 //drag (entire object)
-                var supersupergroup = $.paper().g(supergroup._,supergroup.rect);
                 var start_x = 0, start_y = 0;
                 group.DRAG(function(dx, dy, x, y) {
-                    supersupergroup.attr({
+                    supergroup.group.attr({
                         transform: "matrix(1,0,0,1," + (start_x + dx) + "," + (start_y + dy) + ")"
                     });
                 }, function(){}, function(event) {
-                    console.log(supersupergroup,supersupergroup.matrix);
-                    start_x = supersupergroup.matrix.e;
-                    start_y = supersupergroup.matrix.f;
+                    start_x = supergroup.group.matrix.e;
+                    start_y = supergroup.group.matrix.f;
                 });
                 //drag (oneToX)
-                var line = $("line").$(10, 0, 0, 0);
-                line.transform("matrix(1,0,0,1," + x + "," + (y + 18) + ")");
+                var line = $("line").$(0, 0, 0, 0);
+                line._.attr({
+                    "stroke-width": "1",
+                    stroke: "black"
+                })
+                var placholder1 = $(oneToX._.clone());
+                placholder1._.attr({
+                    "fill-opacity":0
+                });
+                $.paper().prepend(placholder1._);
                 oneToX.DRAG(
                     function(dx,dy,x,y,event){
                         line._.attr({
-                            x1:dx,
-                            y1:dy
+                            x2:dx,
+                            y2:dy
                         });
                     },function(x,y,event){
-                        //start
+                        placholder1._.attr({
+                            "fill-opacity":1,
+                            transform: oneToXMatrix
+                        });
+                        line.transform(oneToXMatrix);
                     },function(event){
-                        //end
+                        line._.attr({
+                            x2:0,
+                            y2:0
+                        });
+                        placholder1._.stop().animate({
+                            transform: oneToXMatrix0,
+                            "fill-opacity":0
+                        },
+                        300, mina.easeout);
                 });
             },
             makePermuteFn: function(callback){ //create a closure with var a & b
@@ -261,6 +288,38 @@ var initGUI1 = function(editor) {
             }
         };
 
+        /* data & data function*/
+
+        var collectionNames = [];
+
+        var checkDuplicateName = function(s){
+            var a = 0;
+            while(a<collectionNames.length){
+                var existed = collectionNames[a];
+                if(existed===s){
+                    existed_number = parseInt(existed[existed.length-1]);
+                    if(existed_number>1){
+                        s_number = parseInt(s[s.length-1]);
+                        console.log(s_number,s)
+                        if(s_number>1){
+                            s = s.slice(0,-1);
+                            var highest = s_number > existed_number? s_number : existed_number;
+                            s+=(highest+1);
+                        }else{
+                            //s last is not a number
+                            s+=(existed_number+1);
+                        }
+                        return checkDuplicateName(s);
+                    }else{
+                        s+=2;
+                        return checkDuplicateName(s);
+                    }
+                }
+                a++;
+            }
+            return s;
+        }
+
         $(".everything");
         $.load("cube.svg",function(object){
             var x = $.box.width() - object.width();
@@ -278,9 +337,11 @@ var initGUI1 = function(editor) {
                 $._.setObjectPosition(obj,x,y);
                 input.one("blur",function(){
                     var collectionName = input.val();
+                    collectionName = checkDuplicateName(collectionName);
                     input.removeClass("inputBeneath");
                     var text = $._.appendTextBeneath(obj,below.x,below.y,collectionName);
                     _editor.createCollection(collectionName);
+                    collectionNames.push(collectionName);
                     $._.finalizeCollectionObject(obj,x,y,text);
                 });
 
