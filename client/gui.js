@@ -115,7 +115,7 @@ return ArchySVG;
 
 
 var initGUI1 = function(editor) {
-
+    editor.$blockScrolling = Infinity;
     editor.setReadOnly(true);
     var typing = false,
         typeString = "";
@@ -137,7 +137,7 @@ var initGUI1 = function(editor) {
 
     var _editor = {
         createCollection : function(collectionName) {
-            typeString += "DBButler.prepare(\""+collectionName+"\");\n";
+            typeString += "DBButler.prepare({name: \""+collectionName+"\"});\n";
             typedown();
         },
         deleteLine : function(n,t){
@@ -182,7 +182,30 @@ var initGUI1 = function(editor) {
                 $.paper().append(object._);
                 object.transform("matrix(1,0,0,1," + x + "," + y + ")");
             },
+            turnOnInterfaces:[],
+            turnOffInterfaces:[],
+            turnInterface: function(onOrOff,n){
+                if(onOrOff==="on"){
+                    $._.turnOnInterfaces[n]()
+                }else{
+                    $._.turnOffInterfaces[n]()
+                }
+            },
+            addToInterface: function(n,on,off){
+                var history1 = $._.turnOnInterfaces[n] || new Function();
+                var history2 = $._.turnOffInterfaces[n] || new Function();
+                $._.turnOnInterfaces[n] = function(){
+                    history1();
+                    on();
+                }
+                $._.turnOffInterfaces[n] = function(){
+                    history2();
+                    off();
+                }
+            },
             finalizeCollectionObject: function(object,x,y,text){
+                var wrapObject = $($.paper().g(object._));
+                var dragTrigger = wrapObject.makeRect(2);
                 //manyToX oneToX icons
                 x = x + object.width() + 15;
                 y = y + 14;
@@ -206,37 +229,100 @@ var initGUI1 = function(editor) {
                 oneToX.transform(oneToXMatrix0);
 
                 //hover
-                var group = object.makeRect(0,[text]);
+                var group = dragTrigger.makeRect(0,[text]);
                 var supergroup = group.makeRect(23,[manyToX,oneToX]);
-                supergroup.group.hover(function(){
-                    oneToX._.stop().animate({
-                            transform: oneToXMatrix
+                var showUp = function(){
+                        oneToX._.stop().animate({
+                                transform: oneToXMatrix
+                            },
+                            500, mina.elastic);
+                        manyToX._.stop().animate({
+                                transform: manyToXMatrix
+                            },
+                            500, mina.elastic);
+                        },
+                    unshowUp = function() {
+                        oneToX._.stop().animate({
+                                transform: oneToXMatrix0
+                            },
+                            300, mina.easeout);
+                        manyToX._.stop().animate({
+                                transform: manyToXMatrix0
+                            },
+                            300, mina.easeout);
+                    };
+                var onHover = function(){
+                    supergroup.group.hover(showUp,unshowUp);;
+                },offHover= function(){
+                    supergroup.group.unhover();
+                }
+                onHover();
+                $._.addToInterface(1,onHover,offHover);
+               
+                //receive dragged
+                var _oneToX =  $("circle").$(0, 0, 5);
+                line1 = $("line").$(-5, 0, 2, -4.6);
+                line2 = $("line").$(-5, 0, 5, 0);
+                line3 = $("line").$(-5, 0, 2, 4.6);
+                [line1, line2, line3].forEach(function(ele) {
+                    ele._.attr({
+                        "stroke-width": "1",
+                        stroke: "black"
+                    });
+                });
+                x -= object.width()+ 30;
+                var _manyToXMatrix = "matrix(1,0,0,1," + x + "," + (y + 18) + ")",
+                    _manyToXMatrix0 = "matrix(0,0,0,0," + x + "," + (y + 18) + ")",
+                    _oneToXMatrix = "matrix(1,0,0,1," + x + "," + y + ")",
+                    _oneToXMatrix0 = "matrix(0,0,0,0," + x + "," + y + ")";
+                var _manyToX = line3.makeRect(0,[line1, line2],_manyToXMatrix);
+                _oneToX = _oneToX.makeRect(0,undefined,_oneToXMatrix);
+                _manyToX.transform(_manyToXMatrix0);
+                _oneToX.transform(_oneToXMatrix0);
+
+                var _interface = supergroup.makeRect(0,[_oneToX, _manyToX]);
+
+                _oneToX._.attr({
+                    "fill-opacity":0.5
+                });
+                _manyToX._.attr({
+                    "fill-opacity":0.5
+                });
+
+                $._.addToInterface(0,
+                function turnOnInterface(){
+                    _oneToX._.stop().animate({
+                            transform: _oneToXMatrix
                         },
                         500, mina.elastic);
-                    manyToX._.stop().animate({
-                            transform: manyToXMatrix
+                    _manyToX._.stop().animate({
+                            transform: _manyToXMatrix
                         },
                         500, mina.elastic);
-                    }, function() {
-                    oneToX._.stop().animate({
-                            transform: oneToXMatrix0
+                },
+                function turnOffInterface(){
+                    _oneToX._.stop().animate({
+                            transform: _oneToXMatrix0
                         },
                         300, mina.easeout);
-                    manyToX._.stop().animate({
-                            transform: manyToXMatrix0
+                    _manyToX._.stop().animate({
+                            transform: _manyToXMatrix0
                         },
                         300, mina.easeout);
                 });
+
+
                 //drag (entire object)
                 var start_x = 0, start_y = 0;
-                group.DRAG(function(dx, dy, x, y) {
-                    supergroup.group.attr({
+                dragTrigger.DRAG(function(dx, dy, x, y) {
+                    _interface.group.attr({
                         transform: "matrix(1,0,0,1," + (start_x + dx) + "," + (start_y + dy) + ")"
                     });
                 }, function(){}, function(event) {
-                    start_x = supergroup.group.matrix.e;
-                    start_y = supergroup.group.matrix.f;
+                    start_x = _interface.group.matrix.e;
+                    start_y = _interface.group.matrix.f;
                 });
+
                 //drag (oneToX)
                 var line = $("line").$(0, 0, 0, 0);
                 line._.attr({
@@ -247,7 +333,9 @@ var initGUI1 = function(editor) {
                 placholder1._.attr({
                     "fill-opacity":0
                 });
-                $.paper().prepend(placholder1._);
+                _interface.group.prepend(placholder1._);
+                _interface.group.prepend(line._);
+                var connectedTo;
                 oneToX.DRAG(
                     function(dx,dy,x,y,event){
                         line._.attr({
@@ -255,12 +343,17 @@ var initGUI1 = function(editor) {
                             y2:dy
                         });
                     },function(x,y,event){
+                        $._.turnInterface("on",0);
+                        $._.turnInterface("off",1);
                         placholder1._.attr({
                             "fill-opacity":1,
                             transform: oneToXMatrix
                         });
                         line.transform(oneToXMatrix);
                     },function(event){
+                        unshowUp();
+                        $._.turnInterface("off",0);
+                        $._.turnInterface("on",1);
                         line._.attr({
                             x2:0,
                             y2:0
@@ -270,6 +363,9 @@ var initGUI1 = function(editor) {
                             "fill-opacity":0
                         },
                         300, mina.easeout);
+                        if(connectedTo){
+
+                        }
                 });
             },
             makePermuteFn: function(callback){ //create a closure with var a & b
@@ -300,7 +396,6 @@ var initGUI1 = function(editor) {
                     existed_number = parseInt(existed[existed.length-1]);
                     if(existed_number>1){
                         s_number = parseInt(s[s.length-1]);
-                        console.log(s_number,s)
                         if(s_number>1){
                             s = s.slice(0,-1);
                             var highest = s_number > existed_number? s_number : existed_number;
